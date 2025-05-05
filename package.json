@@ -1,0 +1,19 @@
+{
+    "name": "comp2537-assignment1",
+    "version": "1.0.0",
+    "description": "Web Development 2 Assignment 1",
+    "main": "server.js",
+    "scripts": {
+      "start": "node server.js"
+    },
+    "dependencies": {
+      "bcrypt": "^5.1.1",
+      "connect-mongo": "^5.1.0",
+      "dotenv": "^16.4.5",
+      "express": "^4.21.0",
+      "express-session": "^1.18.0",
+      "hbs": "^4.2.0",
+      "joi": "^17.13.3",
+      "mongodb": "^6.9.0"
+    }
+  }
