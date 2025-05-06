@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Log In</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h1>Log In</h1>
+  {{#if error}}
+    <p>{{error}}</p>
+    <a href="/login">Try again</a>
+  {{/if}}
+  <form action="/loginSubmit" method="POST">
+    <label>Email: <input type="email" name="email"></label><br>
+    <label>Password: <input type="password" name="password"></label><br>
+    <button type="submit">Submit</button>
+  </form>
+</body>
+</html>

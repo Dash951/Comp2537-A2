@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Home</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <h1>Welcome to the Website</h1>
+  {{#if loggedIn}}
+    <p>Hello, {{name}}!</p>
+    <a href="/members">Go to Members Area</a><br>
+    <a href="/logout">Logout</a>
+  {{else}}
+    <a href="/signup">Sign Up</a><br>
+    <a href="/login">Log In</a>
+  {{/if}}
+</body>
+</html>
