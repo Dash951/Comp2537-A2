@@ -16,16 +16,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 
-const client = new MongoClient(
-  `${process.env.MONGODB_HOST}${process.env.MONGODB_DATABASE}?retryWrites=true&w=majority`,
-  {
-    auth: {
-      username: process.env.MONGODB_USER,
-      password: process.env.MONGODB_PASSWORD,
-    },
-  }
-);
-
+const client = new MongoClient(process.env.MONGODB_URI);
 app.use(
   session({
     secret: process.env.NODE_SESSION_SECRET,
