@@ -1,0 +1,11 @@
+<li class="list-group-item d-flex justify-content-between align-items-center">
+  <%= user.name %> (<%= user.user_type %>)
+  <div>
+    <% if (user.user_type !== 'admin') { %>
+      <a href="/admin/promote/<%= user.email %>" class="btn btn-sm btn-success">Promote to Admin</a>
+    <% } %>
+    <% if (user.user_type !== 'user') { %>
+      <a href="/admin/demote/<%= user.email %>" class="btn btn-sm btn-warning">Demote to User</a>
+    <% } %>
+  </div>
+</li>

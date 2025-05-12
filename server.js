@@ -10,10 +10,11 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3015;
 
+// Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-app.set('view engine', 'hbs');
+app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 const client = new MongoClient(process.env.MONGODB_URI);
@@ -24,14 +25,15 @@ app.use(
       client,
       dbName: process.env.MONGODB_DATABASE,
       collectionName: 'sessions',
-      ttl: 3600, 
+      ttl: 3600,
     }),
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 3600 * 1000 }, 
+    cookie: { maxAge: 3600 * 1000 },
   })
 );
 
+// Joi Schemas
 const signupSchema = Joi.object({
   name: Joi.string().max(20).required(),
   email: Joi.string().email().max(50).required(),
@@ -43,8 +45,8 @@ const loginSchema = Joi.object({
   password: Joi.string().max(20).required(),
 });
 
+// MongoDB Connection
 let usersCollection;
-
 async function connectDB() {
   try {
     await client.connect();
@@ -55,9 +57,30 @@ async function connectDB() {
     console.error('MongoDB connection error:', err);
   }
 }
-
 connectDB();
 
+// Middleware to check if user is logged in
+const isAuthenticated = (req, res, next) => {
+  if (req.session.user) {
+    return next();
+  }
+  res.redirect('/login');
+};
+
+// Middleware to check if user is admin
+const isAdmin = async (req, res, next) => {
+  if (req.session.user) {
+    const user = await usersCollection.findOne({ email: req.session.user.email });
+    if (user && user.user_type === 'admin') {
+      return next();
+    }
+    res.status(403).render('error', { error: 'You are not authorized to access this page', status: 403 });
+  } else {
+    res.redirect('/login');
+  }
+};
+
+// Routes
 app.get('/', (req, res) => {
   if (req.session.user) {
     res.render('home', { loggedIn: true, name: req.session.user.name });
@@ -67,7 +90,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/signup', (req, res) => {
-  res.render('signup');
+  res.render('signup', { error: null });
 });
 
 app.post('/signupSubmit', async (req, res) => {
@@ -85,10 +108,15 @@ app.post('/signupSubmit', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    // Set default user_type to 'user'
+    await usersCollection.insertOne({
+      name,
+      email,
+      password: hashedPassword,
+      user_type: 'user',
+    });
 
-    await usersCollection.insertOne({ name, email, password: hashedPassword });
-
-    req.session.user = { name, email };
+    req.session.user = { name, email, user_type: 'user' };
     res.redirect('/members');
   } catch (err) {
     res.render('signup', { error: 'Server error, please try again' });
@@ -96,7 +124,7 @@ app.post('/signupSubmit', async (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  res.render('login');
+  res.render('login', { error: null });
 });
 
 app.post('/loginSubmit', async (req, res) => {
@@ -118,24 +146,19 @@ app.post('/loginSubmit', async (req, res) => {
       return res.render('login', { error: 'Invalid email/password combination' });
     }
 
-    req.session.user = { name: user.name, email: user.email };
+    req.session.user = { name: user.name, email: user.email, user_type: user.user_type };
     res.redirect('/members');
   } catch (err) {
     res.render('login', { error: 'Server error, please try again' });
   }
 });
 
-app.get('/members', (req, res) => {
-  if (!req.session.user) {
-    return res.redirect('/');
-  }
-
+app.get('/members', isAuthenticated, (req, res) => {
+  // Display all three images in a responsive grid
   const images = ['image1.jpg', 'image2.jpg', 'image3.jpg'];
-  const randomImage = images[Math.floor(Math.random() * images.length)];
-
   res.render('members', {
     name: req.session.user.name,
-    image: `/images/${randomImage}`,
+    images: images.map(img => `/images/${img}`),
   });
 });
 
@@ -146,6 +169,39 @@ app.get('/logout', (req, res) => {
     }
     res.redirect('/');
   });
+});
+
+app.get('/admin', isAdmin, async (req, res) => {
+  try {
+    const users = await usersCollection.find({}).toArray();
+    res.render('admin', { users });
+  } catch (err) {
+    res.render('error', { error: 'Server error, please try again', status: 500 });
+  }
+});
+
+app.get('/admin/promote/:email', isAdmin, async (req, res) => {
+  try {
+    await usersCollection.updateOne(
+      { email: req.params.email },
+      { $set: { user_type: 'admin' } }
+    );
+    res.redirect('/admin');
+  } catch (err) {
+    res.render('error', { error: 'Server error, please try again', status: 500 });
+  }
+});
+
+app.get('/admin/demote/:email', isAdmin, async (req, res) => {
+  try {
+    await usersCollection.updateOne(
+      { email: req.params.email },
+      { $set: { user_type: 'user' } }
+    );
+    res.redirect('/admin');
+  } catch (err) {
+    res.render('error', { error: 'Server error, please try again', status: 500 });
+  }
 });
 
 app.use((req, res) => {

@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Members Area</title>
-</head>
-<body>
-  <h1>Members Only</h1>
-  <p>Hello, {{name}}!</p>
-  <img src="{{image}}" alt="Random Image" width="300">
-  <br>
-  <a href="/logout">Logout</a>
-</body>
-</html>
+<%- include('templates/header') %>
+<h1>Hello, <%= name %>!</h1>
+<a href="/logout" class="btn btn-secondary mb-3">Sign Out</a>
+<div class="row row-cols-1 row-cols-md-3 g-4">
+  <% images.forEach(image => { %>
+    <div class="col">
+      <img src="<%= image %>" class="img-fluid rounded" alt="Member Image">
+    </div>
+  <% }) %>
+</div>
+<%- include('templates/footer') %>

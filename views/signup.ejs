@@ -1,20 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Sign Up</title>
-  <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-  <h1>Sign Up</h1>
-  {{#if error}}
-    <p>{{error}}</p>
-    <a href="/signup">Try again</a>
-  {{/if}}
-  <form action="/signupSubmit" method="POST">
-    <label>Name: <input type="text" name="name"></label><br>
-    <label>Email: <input type="email" name="email"></label><br>
-    <label>Password: <input type="password" name="password"></label><br>
-    <button type="submit">Submit</button>
-  </form>
-</body>
-</html>
+<%- include('templates/header') %>
+<h1>Sign Up</h1>
+<% if (error) { %>
+  <div class="alert alert-danger"><%= error %></div>
+<% } %>
+<form action="/signupSubmit" method="POST" class="needs-validation" novalidate>
+  <div class="mb-3">
+    <label for="name" class="form-label">Name</label>
+    <input type="text" class="form-control" id="name" name="name" required>
+  </div>
+  <div class="mb-3">
+    <label for="email" class="form-label">Email</label>
+    <input type="email" class="form-control" id="email" name="email" required>
+  </div>
+  <div class="mb-3">
+    <label for="password" class="form-label">Password</label>
+    <input type="password" class="form-control" id="password" name="password" required>
+  </div>
+  <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+<a href="/login" class="btn btn-link">Back to Login</a>
+<%- include('templates/footer') %>
