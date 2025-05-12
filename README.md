@@ -4,6 +4,7 @@ Self-graded Assignment 1 Checklist
 
 Student name: Jaden Zhang
 Set: B
+
     Criteria	
     ========
 [x]  A home page links to signup and login, if not logged in; and links to members and signout, if logged in.
