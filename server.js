@@ -92,20 +92,29 @@ const isAuthenticated = (req, res, next) => {
   res.redirect('/login');
 };
 
-// Middleware to check if user is admin
 const isAdmin = async (req, res, next) => {
   try {
-    if (req.session.user) {
-      const user = await usersCollection.findOne({ email: req.session.user.email });
-      if (user && user.user_type === 'admin') {
-        return next();
-      }
-      res.status(403).render('error', { error: 'You are not authorized to access this page', status: 403, loggedIn: !!req.session.user });
-    } else {
-      res.redirect('/login');
+    if (!req.session.user || !req.session.user.email) {
+      console.error('isAdmin: Session user is missing or lacks email');
+      return res.redirect('/login');
     }
+
+    const user = await usersCollection.findOne({ email: req.session.user.email });
+    if (!user) {
+      console.error(`isAdmin: User not found for email: ${req.session.user.email}`);
+      req.session.destroy((err) => {
+        if (err) console.error('Session destruction error:', err.message);
+      });
+      return res.redirect('/login');
+    }
+
+    if (user.user_type === 'admin') {
+      return next();
+    }
+
+    res.status(403).render('error', { error: 'You are not authorized to access this page', status: 403, loggedIn: true });
   } catch (err) {
-    console.error('Error in isAdmin middleware:', err.message);
+    console.error('Error in isAdmin middleware:', err.message, err.stack);
     res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
   }
 };
