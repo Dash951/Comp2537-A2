@@ -10,33 +10,17 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3016;
 
-// Validate environment variables
-if (!process.env.MONGODB_URI) {
-  console.error('Error: MONGODB_URI is not defined in environment variables');
-  process.exit(1);
-}
-if (!process.env.MONGODB_DATABASE) {
-  console.error('Error: MONGODB_DATABASE is not defined in environment variables');
-  process.exit(1);
-}
-if (!process.env.NODE_SESSION_SECRET) {
-  console.error('Error: NODE_SESSION_SECRET is not defined in environment variables');
-  process.exit(1);
-}
-
-// Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// MongoDB Connection
 let client;
 try {
   client = new MongoClient(process.env.MONGODB_URI);
 } catch (err) {
-  console.error('Failed to create MongoClient:', err.message);
+  console.error('error:', err.message);
   process.exit(1);
 }
 
@@ -65,14 +49,13 @@ async function connectDB() {
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
     if (err.name === 'MongoServerError' && err.message.includes('bad auth')) {
-      console.error('Authentication failed. Please verify MONGODB_URI credentials.');
+      console.error('Authentication error.');
     }
     process.exit(1);
   }
 }
 connectDB();
 
-// Joi Schemas
 const signupSchema = Joi.object({
   name: Joi.string().max(20).required(),
   email: Joi.string().email().max(50).required(),
@@ -84,7 +67,6 @@ const loginSchema = Joi.object({
   password: Joi.string().max(20).required(),
 });
 
-// Middleware to check if user is logged in
 const isAuthenticated = (req, res, next) => {
   if (req.session.user) {
     return next();
@@ -95,15 +77,15 @@ const isAuthenticated = (req, res, next) => {
 const isAdmin = async (req, res, next) => {
   try {
     if (!req.session.user || !req.session.user.email) {
-      console.error('isAdmin: Session user is missing or lacks email');
+      console.error('isAdmin: Error');
       return res.redirect('/login');
     }
 
     const user = await usersCollection.findOne({ email: req.session.user.email });
     if (!user) {
-      console.error(`isAdmin: User not found for email: ${req.session.user.email}`);
+      console.error(`isAdmin: Error: ${req.session.user.email}`);
       req.session.destroy((err) => {
-        if (err) console.error('Session destruction error:', err.message);
+        if (err) console.error('Errorrror:', err.message);
       });
       return res.redirect('/login');
     }
@@ -114,18 +96,17 @@ const isAdmin = async (req, res, next) => {
 
     res.status(403).render('error', { error: 'You are not authorized to access this page', status: 403, loggedIn: true });
   } catch (err) {
-    console.error('Error in isAdmin middleware:', err.message, err.stack);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    console.error('Error :', err.message, err.stack);
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 };
 
-// Routes
 app.get('/', (req, res) => {
   try {
     res.render('home', { loggedIn: !!req.session.user, name: req.session.user ? req.session.user.name : null });
   } catch (err) {
     console.error('Error in / route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
@@ -134,7 +115,7 @@ app.get('/signup', (req, res) => {
     res.render('signup', { error: null, loggedIn: !!req.session.user });
   } catch (err) {
     console.error('Error in /signup route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
@@ -164,7 +145,7 @@ app.post('/signupSubmit', async (req, res) => {
     res.redirect('/members');
   } catch (err) {
     console.error('Error in /signupSubmit route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
@@ -173,7 +154,7 @@ app.get('/login', (req, res) => {
     res.render('login', { error: null, loggedIn: !!req.session.user });
   } catch (err) {
     console.error('Error in /login route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
@@ -200,7 +181,7 @@ app.post('/loginSubmit', async (req, res) => {
     res.redirect('/members');
   } catch (err) {
     console.error('Error in /loginSubmit route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
@@ -210,11 +191,11 @@ app.get('/members', isAuthenticated, (req, res) => {
     res.render('members', {
       name: req.session.user.name,
       images: images.map(img => `/images/${img}`),
-      loggedIn: true, // User is authenticated
+      loggedIn: true, 
     });
   } catch (err) {
     console.error('Error in /members route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
@@ -223,23 +204,23 @@ app.get('/logout', (req, res) => {
     req.session.destroy((err) => {
       if (err) {
         console.error('Session destruction error:', err.message);
-        return res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: false });
+        return res.status(500).render('error', { error: 'Error', status: 500, loggedIn: false });
       }
       res.redirect('/');
     });
   } catch (err) {
     console.error('Error in /logout route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
 app.get('/admin', isAdmin, async (req, res) => {
   try {
     const users = await usersCollection.find({}).toArray();
-    res.render('admin', { users, loggedIn: true }); // User is authenticated and admin
+    res.render('admin', { users, loggedIn: true }); 
   } catch (err) {
-    console.error('Error in /admin route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    console.error('Error:', err.message);
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
@@ -252,7 +233,7 @@ app.get('/admin/promote/:email', isAdmin, async (req, res) => {
     res.redirect('/admin');
   } catch (err) {
     console.error('Error in /admin/promote route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
@@ -264,24 +245,22 @@ app.get('/admin/demote/:email', isAdmin, async (req, res) => {
     );
     res.redirect('/admin');
   } catch (err) {
-    console.error('Error in /admin/demote route:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    console.error('Error:', err.message);
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error('Global error:', err.message, err.stack);
-  res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+  res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
 });
 
-// 404 handler
 app.use((req, res) => {
   try {
     res.status(404).render('404', { loggedIn: !!req.session.user });
   } catch (err) {
     console.error('Error in 404 handler:', err.message);
-    res.status(500).render('error', { error: 'Internal Server Error', status: 500, loggedIn: !!req.session.user });
+    res.status(500).render('error', { error: 'Error', status: 500, loggedIn: !!req.session.user });
   }
 });
 
